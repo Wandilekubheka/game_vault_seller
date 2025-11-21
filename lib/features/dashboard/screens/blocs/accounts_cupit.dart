@@ -34,7 +34,7 @@ class AccountsCubit extends Cubit<AccountState> {
     try {
       // giving it a perfect .99 ending
       double fee = price * 0.1;
-      if (price > 500) {
+      if (price < 500) {
         fee = 50;
       }
       if (price > 5000) {
