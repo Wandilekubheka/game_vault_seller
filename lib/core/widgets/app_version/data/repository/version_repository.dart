@@ -4,7 +4,7 @@ import 'package:http/http.dart' as http;
 class VersionRepository {
   Future<AppVersion> _getAppVersion() async {
     await Future.delayed(const Duration(milliseconds: 500));
-    return const AppVersion(version: '1.0.1', buildNumber: '100');
+    return const AppVersion(version: '1.0.2', buildNumber: '100');
   }
 
   Future<AppVersion> _getLatestAppVersion() async {
