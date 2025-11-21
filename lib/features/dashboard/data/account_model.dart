@@ -38,7 +38,7 @@ class AccountModel {
       imageUrls: List<String>.from(map['imageUrls'] ?? []),
       likes: map['likes'] ?? 0,
       isAvailable: map['isAvailable'] ?? true,
-      status: AccountStatus.values[map['status'] ?? 2],
+      status: AccountStatus.values[map['status'] ?? 0],
     );
   }
 
