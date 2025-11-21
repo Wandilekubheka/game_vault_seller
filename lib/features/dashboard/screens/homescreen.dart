@@ -46,6 +46,10 @@ class _HomescreenState extends State<Homescreen> {
     }
   }
 
+  Future<void> refreshAccounts() async {
+    await context.read<AccountsCubit>().loadAccounts();
+  }
+
   @override
   Widget build(BuildContext context) {
     return Scaffold(
@@ -68,8 +72,7 @@ class _HomescreenState extends State<Homescreen> {
             MaterialPageRoute(builder: (ctx) => const AddAccountScreen()),
           );
           results.then((_) {
-            _refreshData();
-            setState(() {});
+            refreshAccounts();
           });
         },
         child: const Icon(Icons.add, color: Colors.white),
@@ -80,60 +83,59 @@ class _HomescreenState extends State<Homescreen> {
           padding: EdgeInsetsGeometry.all(8),
           child: BlocBuilder<AccountsCubit, AccountState>(
             builder: (context, state) {
-              final user =
-                  context.read<AuthCupit>().state as AuthenticatedWithUserState;
-              if (state is AccountLoading) {
-                return Center(child: CircularProgressIndicator());
-              } else if (state is AccountLoaded) {
-                final accounts = state.accounts;
-                return Column(
-                  children: [
-                    GridView.count(
-                      crossAxisCount: 2,
-                      shrinkWrap: true,
-                      physics: NeverScrollableScrollPhysics(),
-                      crossAxisSpacing: 8,
-                      mainAxisSpacing: 8,
-                      children: [
-                        buildStatCard(
-                          'Total Accounts',
-                          accounts.length.toString(),
-                          Colors.blue,
-                          Colors.white,
+              final user = context.read<AuthCupit>().state;
+              return Column(
+                children: [
+                  user is! AuthenticatedWithUserState
+                      ? SizedBox.shrink()
+                      : GridView.count(
+                          crossAxisCount: 2,
+                          shrinkWrap: true,
+                          physics: NeverScrollableScrollPhysics(),
+                          crossAxisSpacing: 8,
+                          mainAxisSpacing: 8,
+                          children: [
+                            buildStatCard(
+                              'Total Accounts',
+                              state is AccountLoaded
+                                  ? state.accounts.length.toString()
+                                  : '0',
+                              Colors.blue,
+                              Colors.white,
+                            ),
+                            buildStatCard(
+                              'Total Revenue',
+                              'R${user.user.totalRevenue.toStringAsFixed(2)}',
+                              Colors.green,
+                              Colors.white,
+                            ),
+                            buildStatCard(
+                              'Total Customers',
+                              user.user.totalCustomers.toString(),
+                              Colors.orange,
+                              Colors.white,
+                            ),
+                            buildStatCard(
+                              'Total Sold Accounts',
+                              user.user.totalSales.toString(),
+                              Colors.red,
+                              Colors.white,
+                            ),
+                          ],
                         ),
-                        buildStatCard(
-                          'Total Revenue',
-                          'R${user.user.totalRevenue.toStringAsFixed(2)}',
-                          Colors.green,
-                          Colors.white,
+
+                  state is! AccountLoaded
+                      ? Center(child: CircularProgressIndicator())
+                      : ListView.builder(
+                          shrinkWrap: true,
+                          physics: NeverScrollableScrollPhysics(),
+                          itemCount: state.accounts.length,
+                          itemBuilder: (context, index) {
+                            return buildProductItem(state.accounts[index]);
+                          },
                         ),
-                        buildStatCard(
-                          'Total Customers',
-                          user.user.totalCustomers.toString(),
-                          Colors.orange,
-                          Colors.white,
-                        ),
-                        buildStatCard(
-                          'Total Sold Accounts',
-                          user.user.totalSales.toString(),
-                          Colors.red,
-                          Colors.white,
-                        ),
-                      ],
-                    ),
-                    ListView.builder(
-                      shrinkWrap: true,
-                      physics: NeverScrollableScrollPhysics(),
-                      itemCount: accounts.length,
-                      itemBuilder: (context, index) {
-                        return buildProductItem(accounts[index]);
-                      },
-                    ),
-                  ],
-                );
-              } else {
-                return Center(child: Text('Failed to load accounts'));
-              }
+                ],
+              );
             },
           ),
         ),

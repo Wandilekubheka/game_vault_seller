@@ -71,36 +71,25 @@ class _AddAccountScreenState extends State<AddAccountScreen> {
     }
 
     if (_formKey.currentState!.validate()) {
-      setState(() {
-        isLoadingScreen = true;
-      });
-
-      try {
-        await context.read<AccountsCubit>().addAccount(
+      Navigator.of(context).pop();
+      WidgetsBinding.instance.addPostFrameCallback((_) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(content: Text('Adding account, please wait...')),
+        );
+        context.read<AccountsCubit>().addAccount(
           accountName: accountName.text,
           accountDescription: accountDescription.text,
           price: double.parse(price.text),
           images: _images,
           user: user!,
         );
-
-        if (mounted) {
-          if (context.read<AccountsCubit>().state is AccountError) {
-            final state = context.read<AccountsCubit>().state as AccountError;
-            ScaffoldMessenger.of(
-              context,
-            ).showSnackBar(SnackBar(content: Text(state.message)));
-          } else {
-            Navigator.of(context).pop(true);
-          }
+        final state = context.read<AccountsCubit>().state;
+        if (state is AccountError) {
+          ScaffoldMessenger.of(
+            context,
+          ).showSnackBar(SnackBar(content: Text(state.message)));
         }
-      } finally {
-        if (mounted) {
-          setState(() {
-            isLoadingScreen = false;
-          });
-        }
-      }
+      });
     }
   }
 
