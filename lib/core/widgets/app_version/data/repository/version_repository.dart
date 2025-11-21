@@ -9,7 +9,7 @@ class VersionRepository {
 
   Future<AppVersion> _getLatestAppVersion() async {
     final versionUrl = Uri.parse(
-      'https://raw.githubusercontent.com/Wandilekubheka/game-vault-release/refs/heads/main/termsAndPolicy/version.json',
+      "https://raw.githubusercontent.com/Wandilekubheka/game-vault-release/refs/heads/main/termsAndPolicy/versionSeller.json",
     );
     final response = await http.get(versionUrl);
 
