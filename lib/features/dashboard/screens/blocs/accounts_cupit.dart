@@ -33,9 +33,14 @@ class AccountsCubit extends Cubit<AccountState> {
     emit(AccountLoading());
     try {
       // giving it a perfect .99 ending
-      final taxedPrice =
-          (price > 500 ? price + 50 : price + (price * 0.1)).ceilToDouble() -
-          0.01;
+      double fee = price * 0.1;
+      if (price > 500) {
+        fee = 50;
+      }
+      if (price > 5000) {
+        fee = 400;
+      }
+      final taxedPrice = (price + fee).ceilToDouble() - 0.01;
 
       List<String> imageUrls = [];
       if (images != null) {
