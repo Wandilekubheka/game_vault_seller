@@ -10,6 +10,7 @@ class AccountModel {
   final int likes;
   final DateTime createdAt = DateTime.now();
   final bool isAvailable;
+  final AccountStatus status;
 
   AccountModel({
     required this.sellerName,
@@ -22,6 +23,7 @@ class AccountModel {
     required this.accountId,
     this.likes = 0,
     this.isAvailable = true,
+    this.status = AccountStatus.available,
   });
 
   factory AccountModel.fromMap(Map<String, dynamic> map) {
@@ -36,6 +38,7 @@ class AccountModel {
       imageUrls: List<String>.from(map['imageUrls'] ?? []),
       likes: map['likes'] ?? 0,
       isAvailable: map['isAvailable'] ?? true,
+      status: AccountStatus.values[map['status'] ?? 2],
     );
   }
 
@@ -51,6 +54,7 @@ class AccountModel {
       'imageUrls': imageUrls,
       'likes': likes,
       'isAvailable': isAvailable,
+      'status': status.index,
     };
   }
 
@@ -64,9 +68,11 @@ class AccountModel {
     int? likes,
     bool? isAvailable,
     List<String>? imageUrls,
+    String? accountId,
+    AccountStatus? status,
   }) {
     return AccountModel(
-      accountId: accountId,
+      accountId: accountId ?? this.accountId,
       sellerName: sellerName ?? this.sellerName,
       accountTitle: accountTitle ?? this.accountTitle,
       accountDescription: accountDescription ?? this.accountDescription,
@@ -76,6 +82,9 @@ class AccountModel {
       imageUrls: imageUrls ?? this.imageUrls,
       likes: likes ?? this.likes,
       isAvailable: isAvailable ?? this.isAvailable,
+      status: status ?? this.status,
     );
   }
 }
+
+enum AccountStatus { available, sold, pending }

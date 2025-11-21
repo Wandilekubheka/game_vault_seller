@@ -6,6 +6,7 @@ import 'package:game_vault_seller/features/dashboard/data/account_model.dart';
 import 'package:game_vault_seller/features/dashboard/screens/add_account.dart';
 import 'package:game_vault_seller/features/dashboard/screens/blocs/account_state.dart';
 import 'package:game_vault_seller/features/dashboard/screens/blocs/accounts_cupit.dart';
+import 'package:url_launcher/url_launcher.dart';
 
 class Homescreen extends StatefulWidget {
   const Homescreen({super.key});
@@ -15,9 +16,16 @@ class Homescreen extends StatefulWidget {
 }
 
 class _HomescreenState extends State<Homescreen> {
+  late TextEditingController _email;
+  late TextEditingController _password;
+  late TextEditingController _logsType;
+
   @override
   void initState() {
     super.initState();
+    _email = TextEditingController();
+    _password = TextEditingController();
+    _logsType = TextEditingController();
     WidgetsBinding.instance.addPostFrameCallback((_) {
       context.read<AccountsCubit>().loadAccounts().then((_) {
         _refreshData();
@@ -173,53 +181,179 @@ class _HomescreenState extends State<Homescreen> {
   }
 
   Widget buildProductItem(AccountModel account) {
-    return ListTile(
-      leading: Icon(Icons.videogame_asset),
-      title: Text(account.accountTitle),
-      subtitle: Text('R${account.price.toStringAsFixed(2)}'),
-      trailing: Icon(Icons.arrow_forward_ios),
-      onTap: () {
-        // Navigator.push(
-        //   context,
-        //   MaterialPageRoute(
-        //     builder: (context) => AddAccountScreen(existingAccount: account),
-        //   ),
-        // );
-      },
-      onLongPress: () {
-        showDialog(
-          context: context,
-          builder: (context) {
-            return AlertDialog(
-              backgroundColor: Colors.white,
-              title: Text(
-                'Delete Product',
-                style: TextStyle(
-                  fontWeight: FontWeight.bold,
-                  color: Colors.black,
-                ),
-              ),
-              content: Text(
-                'Are you sure you want to delete this image?',
-                style: TextStyle(color: Colors.black87),
-              ),
-              actions: [
-                TextButton(
-                  onPressed: () async {
-                    await context.read<AccountsCubit>().deleteAccount(account);
-                    Navigator.of(context).pop();
-                  },
-                  child: Text('Delete'),
-                ),
-                TextButton(
-                  onPressed: () {
-                    Navigator.of(context).pop();
-                  },
-                  child: Text('Cancel', style: TextStyle(color: Colors.grey)),
-                ),
-              ],
+    return Card(
+      color: Colors.grey[200],
+      child: InkWell(
+        onTap: () async {
+          if (account.status == AccountStatus.pending) {
+            await locateAccountLogs(account);
+          } else {
+            ScaffoldMessenger.of(context).showSnackBar(
+              SnackBar(content: Text('Account is not pending logs')),
             );
-          },
+          }
+        },
+        onLongPress: () async {
+          await deleteAccount(account);
+        },
+        child: Padding(
+          padding: const EdgeInsets.all(8.0),
+          child: Row(
+            spacing: 10,
+            children: [
+              Expanded(
+                flex: 1,
+                child: ClipRRect(
+                  borderRadius: BorderRadius.circular(8.0),
+                  child: Image.network(
+                    account.imageUrls.isNotEmpty
+                        ? account.imageUrls[0]
+                        : 'https://via.placeholder.com/150',
+                    height: 100,
+                    fit: BoxFit.cover,
+                    loadingBuilder: (context, child, loadingProgress) {
+                      if (loadingProgress == null) return child;
+                      return Center(child: CircularProgressIndicator());
+                    },
+                  ),
+                ),
+              ),
+              Expanded(
+                flex: 2,
+                child: Padding(
+                  padding: const EdgeInsets.all(8.0),
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Text(
+                        account.accountTitle,
+                        style: TextStyle(
+                          fontSize: 16,
+                          fontWeight: FontWeight.bold,
+                        ),
+                      ),
+                      SizedBox(height: 4),
+                      Text(
+                        'Price: R${account.price.toStringAsFixed(2)}',
+                        style: TextStyle(fontSize: 14),
+                      ),
+                      SizedBox(height: 4),
+                      Text(
+                        account.status == AccountStatus.available
+                            ? 'Available'
+                            : account.status == AccountStatus.sold
+                            ? 'Sold'
+                            : 'Pending',
+                      ),
+                    ],
+                  ),
+                ),
+              ),
+            ],
+          ),
+        ),
+      ),
+    );
+  }
+
+  Future<void> locateAccountLogs(AccountModel account) async {
+    showDialog(
+      context: context,
+      builder: (context) {
+        return AlertDialog(
+          backgroundColor: Colors.white,
+          title: Text(
+            'Account Logs',
+            style: TextStyle(fontWeight: FontWeight.bold, color: Colors.black),
+          ),
+          content: Column(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              TextField(
+                controller: _email,
+                decoration: InputDecoration(labelText: 'username'),
+              ),
+              const SizedBox(height: 8),
+              TextField(
+                controller: _password,
+                decoration: InputDecoration(labelText: 'Password'),
+                obscureText: true,
+              ),
+              const SizedBox(height: 8),
+
+              TextField(
+                controller: _logsType,
+                decoration: InputDecoration(labelText: 'Logs Type'),
+              ),
+            ],
+          ),
+          actions: [
+            TextButton(
+              onPressed: () async {
+                final email = _email.text;
+                final password = _password.text;
+                final logsType = _logsType.text;
+                if (email.isEmpty || password.isEmpty || logsType.isEmpty) {
+                  ScaffoldMessenger.of(context).showSnackBar(
+                    SnackBar(content: Text('Please fill in all fields')),
+                  );
+                  return;
+                }
+                final url = Uri.parse(
+                  'https://wa.me/+27689014567?text=username: $email%0APassword: $password%0ALogs Type: $logsType',
+                );
+                if (await canLaunchUrl(url)) {
+                  await launchUrl(url);
+                } else {
+                  ScaffoldMessenger.of(context).showSnackBar(
+                    SnackBar(content: Text('Could not launch WhatsApp')),
+                  );
+                  return;
+                }
+              },
+              child: Text('Submit'),
+            ),
+            TextButton(
+              onPressed: () {
+                Navigator.of(context).pop();
+              },
+              child: Text('Close'),
+            ),
+          ],
+        );
+      },
+    );
+  }
+
+  Future<void> deleteAccount(AccountModel account) async {
+    showDialog(
+      context: context,
+      builder: (context) {
+        return AlertDialog(
+          backgroundColor: Colors.white,
+          title: Text(
+            'Delete Product',
+            style: TextStyle(fontWeight: FontWeight.bold, color: Colors.black),
+          ),
+          content: Text(
+            'Are you sure you want to delete this image?',
+            style: TextStyle(color: Colors.black87),
+          ),
+          actions: [
+            TextButton(
+              onPressed: () async {
+                await context.read<AccountsCubit>().deleteAccount(account);
+                Navigator.of(context).pop();
+              },
+              child: Text('Delete'),
+            ),
+            TextButton(
+              onPressed: () {
+                Navigator.of(context).pop();
+              },
+              child: Text('Cancel', style: TextStyle(color: Colors.grey)),
+            ),
+          ],
         );
       },
     );
