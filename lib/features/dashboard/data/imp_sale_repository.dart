@@ -29,7 +29,6 @@ class ImpSaleRepository extends SaleRepository {
           .collection('accounts')
           .where('accountId', isGreaterThanOrEqualTo: uid)
           .where('accountId', isLessThanOrEqualTo: '$uid\uf8ff')
-          .where('isAvailable', isEqualTo: true)
           .get();
       return snapshot.docs
           .map((doc) => AccountModel.fromMap(doc.data()))

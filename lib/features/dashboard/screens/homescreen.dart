@@ -84,6 +84,12 @@ class _HomescreenState extends State<Homescreen> {
           child: BlocBuilder<AccountsCubit, AccountState>(
             builder: (context, state) {
               final user = context.read<AuthCupit>().state;
+              if (state is AccountError) {
+                return Center(child: Text(state.message));
+              } else if (state is AccountLoading || user is InitialAuthState) {
+                return Center(child: CircularProgressIndicator());
+              }
+              final accounts = state is AccountLoaded ? state.accounts : [];
               return Column(
                 children: [
                   user is! AuthenticatedWithUserState
@@ -97,27 +103,41 @@ class _HomescreenState extends State<Homescreen> {
                           children: [
                             buildStatCard(
                               'Total Accounts',
-                              state is AccountLoaded
-                                  ? state.accounts.length.toString()
-                                  : '0',
+                              accounts.length.toString(),
                               Colors.blue,
                               Colors.white,
                             ),
                             buildStatCard(
                               'Total Revenue',
-                              'R${user.user.totalRevenue.toStringAsFixed(2)}',
+                              'R${accounts.fold<double>(0.0, (sum, account) => sum + (account.price ?? 0.0)).toStringAsFixed(2)}',
                               Colors.green,
                               Colors.white,
                             ),
                             buildStatCard(
                               'Total Customers',
-                              user.user.totalCustomers.toString(),
+                              accounts
+                                  .fold(
+                                    0,
+                                    (sum, account) =>
+                                        sum +
+                                        (account.isAvailable == false ? 1 : 0),
+                                  )
+                                  .toString(),
                               Colors.orange,
                               Colors.white,
                             ),
                             buildStatCard(
                               'Total Sold Accounts',
-                              user.user.totalSales.toString(),
+                              accounts
+                                  .fold(
+                                    0,
+                                    (sum, account) =>
+                                        sum +
+                                        (account.status == AccountStatus.sold
+                                            ? 1
+                                            : 0),
+                                  )
+                                  .toString(),
                               Colors.red,
                               Colors.white,
                             ),
@@ -279,14 +299,28 @@ class _HomescreenState extends State<Homescreen> {
               TextField(
                 controller: _password,
                 decoration: InputDecoration(labelText: 'Password'),
-                obscureText: true,
               ),
               const SizedBox(height: 8),
-
-              TextField(
-                controller: _logsType,
-                decoration: InputDecoration(labelText: 'Logs Type'),
+              DropdownButtonFormField<logsType>(
+                style: TextStyle(color: Colors.black),
+                initialValue: logsType.Google,
+                items: logsType.values.map((logsType type) {
+                  return DropdownMenuItem<logsType>(
+                    value: type,
+                    child: Text(type.toString().split('.').last),
+                  );
+                }).toList(),
+                onChanged: (logsType? newValue) {
+                  setState(() {
+                    _logsType.text = newValue!.name;
+                  });
+                },
               ),
+
+              // TextField(
+              //   controller: _logsType,
+              //   decoration: InputDecoration(labelText: 'Logs Type'),
+              // ),
             ],
           ),
           actions: [
@@ -302,7 +336,7 @@ class _HomescreenState extends State<Homescreen> {
                   return;
                 }
                 final url = Uri.parse(
-                  'https://wa.me/+27689014567?text=username: $email%0APassword: $password%0ALogs Type: $logsType',
+                  'https://wa.me/+27689014567?text=username: $email%0APassword: $password%0ALogs Type: $logsType %0AAccount ID: ${account.accountId}',
                 );
                 if (await canLaunchUrl(url)) {
                   await launchUrl(url);
@@ -361,3 +395,5 @@ class _HomescreenState extends State<Homescreen> {
     );
   }
 }
+
+enum logsType { Google, Facebook, Twitter, Apple }
